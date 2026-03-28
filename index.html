@@ -445,31 +445,7 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── KEY CONFIG PROMPT ── */
-  .key-prompt {
-    background: var(--surface);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius);
-    padding: 20px;
-    margin-bottom: 20px;
-    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  }
 
-  .key-prompt input {
-    flex: 1;
-    min-width: 220px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    padding: 9px 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
-    outline: none;
-  }
-
-  .key-prompt input:focus { border-color: var(--accent); }
-  .key-note { font-size: 0.78rem; color: var(--muted); }
 
   /* ── SPACED REPETITION RATING ── */
   .sr-rating {
@@ -676,15 +652,6 @@
       <h1>English Language & Literature</h1>
       <p>OCR A Level H474 · Exam-focused revision across all four texts</p>
 
-      <div id="api-key-prompt" class="key-prompt" style="display:none">
-        <div style="flex:1">
-          <h3 style="color:var(--accent);margin-bottom:4px">Enable AI Marking</h3>
-          <p class="key-note">Enter your Anthropic API key to unlock AI-powered essay feedback. Stored locally only.</p>
-        </div>
-        <input type="password" id="api-key-input" placeholder="sk-ant-..." />
-        <button class="btn" onclick="saveApiKey()">Save Key</button>
-      </div>
-
       <div class="stats-row" id="dash-stats"></div>
 
       <div id="today-session" class="section-block" style="display:none">
@@ -882,14 +849,6 @@
       <h1>Write & Mark</h1>
       <p>Practice the actual H474 question types with AI feedback referenced to the five assessment objectives.</p>
 
-      <div id="write-key-warning" class="key-prompt" style="display:none">
-        <div>
-          <h3 style="color:var(--accent);margin-bottom:4px">API Key Required</h3>
-          <p class="key-note">Enter your Anthropic API key on the Home screen to enable AI marking.</p>
-        </div>
-        <button class="btn secondary" onclick="showPanel('dashboard')">Go to Home</button>
-      </div>
-
       <div class="mode-tabs">
         <button class="mode-tab active" onclick="setWriteMode('c01a',this)">C01A – Re-telling</button>
         <button class="mode-tab" onclick="setWriteMode('c01b',this)">C01B – Poetic Voices</button>
@@ -986,14 +945,6 @@
     <div id="panel-compare" class="panel">
       <h1>Comparison Planner</h1>
       <p>Build a structured comparative essay plan across two texts. Generates a side-by-side paragraph framework with AI assistance.</p>
-
-      <div id="compare-key-warning" class="key-prompt" style="display:none">
-        <div>
-          <h3 style="color:var(--accent);margin-bottom:4px">API Key Required</h3>
-          <p class="key-note">Enter your Anthropic API key on the Home screen to enable AI-assisted comparison planning.</p>
-        </div>
-        <button class="btn secondary" onclick="showPanel('dashboard')">Go to Home</button>
-      </div>
 
       <div class="section-block">
         <h3>Set up your comparison</h3>
@@ -2039,12 +1990,15 @@ const QUIZ_QUESTIONS = {
   ]
 };
 
+// ── API KEY ── Set once here; students never see this ──────────────
+const ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
+// ───────────────────────────────────────────────────────────────────
+
 // ═══════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════
 
 let state = {
-  apiKey: '',
   completedTopics: {},
   topicStrengths: {},
   quizScores: {},
@@ -2096,11 +2050,11 @@ function showPanel(id) {
   if (id === 'dashboard') renderDashboard();
   if (id === 'flashcards') initFlashcards();
   if (id === 'quiz') initQuiz();
-  if (id === 'write') checkWriteReady();
+  if (id === 'write') { /* nothing needed */ }
   if (id === 'essay') initEssayWorkspace();
   if (id === 'planner') initPlanner();
   if (id === 'progress') renderProgress();
-  if (id === 'compare') checkCompareReady();
+  if (id === 'compare') { /* nothing needed */ }
 }
 
 // ═══════════════════════════════════════════
@@ -2296,10 +2250,6 @@ Thank you very much.`
 }
 
 async function markEssayFromWorkspace() {
-  if (!state.apiKey) {
-    alert('Enter your Anthropic API key on the Home screen first.');
-    return;
-  }
   const body = document.getElementById('essay-body').value.trim();
   const question = document.getElementById('essay-question').value.trim();
   const component = document.getElementById('essay-component').value;
@@ -2392,10 +2342,6 @@ function setNeaTab(tab, btn) {
 // ═══════════════════════════════════════════
 
 function renderDashboard() {
-  // API key prompt
-  const keyPrompt = document.getElementById('api-key-prompt');
-  keyPrompt.style.display = state.apiKey ? 'none' : 'flex';
-
   // Stats
   const totalTopics = Object.values(TEXTS).flatMap(t => t.topics).length;
   const done = Object.keys(state.completedTopics).filter(k => state.completedTopics[k]).length;
@@ -2445,15 +2391,6 @@ function toggleSession(id) {
   // also refresh planner if visible
   const plannerPanel = document.getElementById('panel-planner');
   if (plannerPanel.classList.contains('active')) initPlanner();
-}
-
-function saveApiKey() {
-  const key = document.getElementById('api-key-input').value.trim();
-  if (key) {
-    state.apiKey = key;
-    saveState();
-    document.getElementById('api-key-prompt').style.display = 'none';
-  }
 }
 
 // ═══════════════════════════════════════════
@@ -3006,16 +2943,7 @@ function generateQuestion() {
   document.getElementById('write-question-display').textContent = q;
 }
 
-function checkWriteReady() {
-  const warning = document.getElementById('write-key-warning');
-  warning.style.display = state.apiKey ? 'none' : 'flex';
-}
-
 async function markAnswer() {
-  if (!state.apiKey) {
-    document.getElementById('write-key-warning').style.display = 'flex';
-    return;
-  }
   const answer = document.getElementById('write-answer').value.trim();
   const question = document.getElementById('write-question-display').textContent.trim();
   if (!answer || answer.length < 30) {
@@ -3400,15 +3328,7 @@ const TEXT_NAMES = {
   poetry: 'Breaking Silence (Sam-La Rose)',
 };
 
-function checkCompareReady() {
-  document.getElementById('compare-key-warning').style.display = state.apiKey ? 'none' : 'flex';
-}
-
 async function generateCompPlan() {
-  if (!state.apiKey) {
-    document.getElementById('compare-key-warning').style.display = 'flex';
-    return;
-  }
   const textA = document.getElementById('comp-text-a').value;
   const textB = document.getElementById('comp-text-b').value;
   const theme = document.getElementById('comp-theme').value.trim();
